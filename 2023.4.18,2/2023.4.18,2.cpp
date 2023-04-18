@@ -3,7 +3,7 @@
 
 #include "pch.h"
 
-void Keyboard(bool* playing, int* x, int* y, int* prevX, int* prevY);
+void Keyboard(bool* playing, int puzzle[5][5], int* x, int* y);
 void Draw(HANDLE hOP, int x, int y, char* str, WORD color);
 
 // 게임 함수들
@@ -11,8 +11,13 @@ void InitPuzzle(int puzzle[5][5]); // 퍼즐 초기화 함수
 void Print(HANDLE hOP, int puzzle[5][5], int x, int y); // 화면에 퍼즐을 그려주는 함수
 void DrawBlock(HANDLE hOP, int x, int y, char* str, WORD color);
 
+void Swap(int* prevBlock, int* currBlock); // 두 블록을 교체해주는 함수
+bool Check(int puzzle[5][5]); // 게임 클리어 확인
+
 int main()
 {
+    system("mode con:lines=25 cols=48"); // 콘솔창의 가로(cols) 세로(lines) 크기 지정
+
     srand(time(NULL));
     rand();
 
@@ -38,6 +43,16 @@ int main()
         {
             system("cls");
 
+            Keyboard(&isPlaying, nPuzzle, &nX, &nY);
+            Print(hOP, nPuzzle, nX, nY);
+            isPlaying = !Check(nPuzzle);
+            
+            if (isPlaying == false)
+            {
+                cout << "게임 클리어!" << endl;
+                system("pause");
+            }
+
             while (_kbhit()) _getch();
         }
     }
@@ -45,16 +60,31 @@ int main()
     return 0;
 }
 
-void Keyboard(bool* playing, int* x, int* y, int* prevX, int* prevY)
+// 2 * 3 + 6 * 2 - 8 / 4
+// (2 * 3) + (6 * 2) - (8 / 4) --> 괄호치는 습관이 들면 실수가 줄어듬
+
+void Keyboard(bool* playing, int puzzle[5][5], int* x, int* y)
 {
-    if (GetAsyncKeyState(VK_RIGHT) & 0x8000) // 오른쪽 방향키, 정의 - F12로 출처 타고 들어갈 수 있음
-        (*x)++;
-    else if (GetAsyncKeyState(VK_LEFT) & 0x8000) // 왼쪽 방향키
+    if (GetAsyncKeyState(VK_RIGHT) & 0x8000 && *x < 4) // 오른쪽 방향키, 정의 - F12로 출처 타고 들어갈 수 있음
+    {
+        Swap(&puzzle[*y][*x], &puzzle[*y][*x + 1]);
+        (*x)++; // 괄호가 없으면 주소값에 ++ 가 먼저 적용됨
+    }
+    else if (GetAsyncKeyState(VK_LEFT) & 0x8000 && *x > 0) // 왼쪽 방향키
+    {
+        Swap(&puzzle[*y][*x], &puzzle[*y][*x - 1]);
         (*x)--;
-    else if (GetAsyncKeyState(VK_UP) & 0x8000) // 위쪽 방향키
+    }
+    else if (GetAsyncKeyState(VK_UP) & 0x8000 && *y > 0) // 위쪽 방향키
+    {
+        Swap(&puzzle[*y][*x], &puzzle[*y - 1][*x]);
         (*y)--;
-    else if (GetAsyncKeyState(VK_DOWN) & 0x8000) // 아래쪽 방향키
+    }
+    else if (GetAsyncKeyState(VK_DOWN) & 0x8000 && *y < 4) // 아래쪽 방향키
+    {
+        Swap(&puzzle[*y][*x], &puzzle[*y + 1][*x]);
         (*y)++;
+    }
     else if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) // ESC
         *playing = false;
 }
@@ -110,9 +140,9 @@ void Print(HANDLE hOP, int puzzle[5][5], int x, int y)
             // itoa : 정수값을 문자로 변형 해주는 함수
 
             if (j == x && i == y) // 빈칸 블럭
-                DrawBlock(hOP, 10 + j * 6, 5 + i * 3, (char*)"■", BG_YELLOW | FG_RED);
+                DrawBlock(hOP, 10 + j * 6, 5 + i * 3, (char*)"■", BG_WHITE | FG_BLACK);
             else
-                DrawBlock(hOP, 10 + j * 6, 5 + i * 3, itoa(puzzle[i][j], szTemp, 10), BG_YELLOW | FG_RED);
+                DrawBlock(hOP, 10 + j * 6, 5 + i * 3, itoa(puzzle[i][j], szTemp, 10), BG_WHITE | FG_BLACK);
             // itoa 보안성 문제 -> 프로젝트 속성 - c++ 구성속성 - 일반 - SDL 검사 - 아니오
         }
     }
@@ -124,4 +154,30 @@ void DrawBlock(HANDLE hOP, int x, int y, char* str, WORD color)
     Draw(hOP, x + 2, y + 0, (char*)"■", color);
     Draw(hOP, x + 0, y + 1, (char*)"■", color);
     Draw(hOP, x + 2, y + 1, (char*)"■", color);
+}
+
+void Swap(int* prevBlock, int* currBlock)
+{
+    int nTemp = *prevBlock;
+    *prevBlock = *currBlock;
+    *currBlock = nTemp;
+}
+
+bool Check(int puzzle[5][5])
+{
+    bool isComplete = false;
+
+    for (int i = 0; i < 5; i++)
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            if (i == 4 && j == 4)
+                isComplete = true;
+
+            if (puzzle[i][j] != j + 1 + i * 5)
+                break;
+        }
+    }
+
+    return isComplete;
 }
