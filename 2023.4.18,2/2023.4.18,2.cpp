@@ -78,7 +78,7 @@ void Keyboard(bool* playing, int puzzle[5][5], int* x, int* y)
     else if (GetAsyncKeyState(VK_UP) & 0x8000 && *y > 0) // 위쪽 방향키
     {
         Swap(&puzzle[*y][*x], &puzzle[*y - 1][*x]);
-        (*y)--;
+        (*y)--; // y는 위쪽이 -다
     }
     else if (GetAsyncKeyState(VK_DOWN) & 0x8000 && *y < 4) // 아래쪽 방향키
     {
